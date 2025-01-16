@@ -19,7 +19,7 @@ conda activate relax
 Then install the following packages
 ```
 pip install mitsuba==3.5
-pip install numpy matplotlib fastsweep scikit-fmm scikit-image lpips
+pip install numpy matplotlib fastsweep==0.1.3 scikit-fmm scikit-image lpips
 conda install -c conda-forge ffmpeg
 ```
 
