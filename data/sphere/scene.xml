@@ -1,0 +1,49 @@
+<scene version="0.6.0">
+    <!-- INTEGRATOR -->
+    <default name="HIDE_ENV" value="True"/>
+    <integrator type="path">
+        <integer name="max_depth" value="3"/>
+        <boolean name="hide_emitters" value="$HIDE_ENV"/>
+    </integrator>
+
+    <!-- CAMERA -->
+    <sensor type="perspective">
+        <float name="fov" value="45"/>
+        <transform name="toWorld">
+            <lookat origin="17.0, 0.8, 0.5" target="0.5, 0.5, 0.5" up="0,1,0"/>
+        </transform>
+        <film type="hdrfilm">
+            <integer name="width" value="512"/>
+            <integer name="height" value="512"/>
+            <rfilter type="gaussian"/>
+            <!-- <boolean name="sample_border" value="true"/> -->
+        </film>
+    </sensor>
+
+    <!-- BSDF -->
+    <bsdf type="twosided" id="grey-bsdf">
+        <bsdf type="diffuse">
+            <rgb name="reflectance" value="1, 1, 1"/>
+        </bsdf>
+    </bsdf>
+
+    <!-- SHAPES -->
+    <shape type="obj">
+        <string name="filename" value="./data/sphere/sphere.obj"/>
+        <transform name="toWorld">
+            <scale value="0.2"/>
+            <translate x="0.5" y="0.5" z="0.5"/>
+        </transform>
+        <ref id="grey-bsdf"/>
+    </shape>
+
+    <!-- LIGHT -->
+    <emitter type="constant">
+        <rgb name="radiance" value="0.25"/>
+    </emitter>
+
+    <emitter type="directional">
+        <vector name="direction" value="-1.0, -1.0, -1.0"/>
+        <rgb name="irradiance" value="1.7"/>
+    </emitter>
+</scene>
