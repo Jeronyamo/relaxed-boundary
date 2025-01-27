@@ -17,11 +17,11 @@
       "laplacian_weight": 1e-5,
       
       "num_sensor": 50,
-      "num_sensor_theta": 24,
+      "num_sensor_theta": 8,
       "num_sensor_phi": 4,
-      "batch_size": 5,
+      "batch_size": 4,
 
-      "sdf_res": 32,
+      "sdf_res": 16,
       "sphere_radius": 0.3
     },
 

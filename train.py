@@ -88,7 +88,7 @@ def main(args):
         height = 0.6
         radius = 1.5
     else:
-        height = 0.4
+        height = 0.5
 
     # load sensors
     sensors = get_h2_sensors(
@@ -121,7 +121,7 @@ def main(args):
             # custom renderer
             ref_image = ref_integrator.render(scene=scene, sdf=sdf, sensor=sensors[i], spp=render_config["ref_spp"]) 
             ref_bitmap = mi.util.convert_to_bitmap(ref_image)
-            mi.util.write_bitmap(join(ref_dir, f"image{i:02d}.png"), ref_bitmap)
+            mi.util.write_bitmap(join(ref_dir, f"image{i:02d}.png"), ref_image)
             ref_images.append(ref_image)
 
     print("----- finish rendering reference image -----")
@@ -218,6 +218,8 @@ def main(args):
         np.random.shuffle(indices) # shuffle indices
         
         for i in indices:
+            direct_diff.ALL_COUNT = 0
+            direct_diff.BORDER_COUNT = 0
             # render image
             seed = epoch * num_sensor + i
             image = sdf_integrator.render(
@@ -232,14 +234,27 @@ def main(args):
                 mi.util.write_bitmap(join(opt_dir, f"image-{epoch}-{i}.png"), bitmap)
             
             # compute image loss
-            loss = l1_loss(image, ref_images[i]) / exp_config["batch_size"]
+            loss = l2_loss(image, ref_images[i]) / exp_config["batch_size"]
             dr.backward(loss)
             loss_sum += loss
+            print(direct_diff.BORDER_COUNT, "/", direct_diff.ALL_COUNT)
         
         # compute reg loss
-        reg_loss = exp_config["laplacian_weight"] * laplacian_loss(sdf.grid.tensor())
-        dr.backward(reg_loss)
-        loss_sum += reg_loss
+        # reg_loss = exp_config["laplacian_weight"] * laplacian_loss(sdf.grid.tensor())
+        # dr.backward(reg_loss)
+        # loss_sum += reg_loss
+
+        sdf_params_ndarray: np.ndarray = dr.grad(sdf.grid.tensor()).numpy()
+        sdf_params_ndarray = sdf_params_ndarray.reshape([16,16,16])
+        with open("./d_sdf_ndarray.txt", 'w') as sdf_file:
+            for layer in sdf_params_ndarray:
+                for val_line in layer:
+                    for val in val_line:
+                        sdf_file.write(str(val) + ",")
+                    sdf_file.write("\n")
+                sdf_file.write("\n")
+            sdf_file.write("\n")
+        # print("Before:\n", sdf_params_ndarray[8]) # PRINT GRAD
     
         # update parameters
         optimizer.step() 
@@ -250,9 +265,9 @@ def main(args):
         optimizer['grid'] = grid 
         
         # update sdf
-        sdf_params.update(optimizer)
+        sdf_params.update(optimizer) # dict.update
         scene_params.update(optimizer)
-        
+
         # check upsample
         if epoch in exp_config["upsample"]:            
             # update learning rate
