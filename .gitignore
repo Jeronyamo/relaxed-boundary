@@ -1,6 +1,9 @@
 __pycache__/
-data/
+data/*
+!data/bunny
+!data/sphere
 evaluate/__pycache__/
 integrators/__pycache__/
 outputs/
 tmp.txt
+d_sdf_ndarray.txt
