@@ -17,6 +17,9 @@ class SDFDirectDiffIntegrator(SDFBaseIntegrator):
         itx, is_grz_i, grz_i = sdf.ray_intersect(ray, method='grz')
         valid_primary = itx.is_valid()
 
+        # How many rays hit relaxed boundary
+        # print(np.count_nonzero(is_grz_i.numpy()))
+
         # surface emission
         E = itx.emitter(scene=scene).eval(itx)
 
