@@ -216,10 +216,9 @@ def main(args):
         num_indices = min(exp_config["batch_size"], num_sensor)
         indices = [(j * steps + epoch % steps) % num_sensor for j in range(num_indices)]
         np.random.shuffle(indices) # shuffle indices
+        # indices = [1,]
         
         for i in indices:
-            direct_diff.ALL_COUNT = 0
-            direct_diff.BORDER_COUNT = 0
             # render image
             seed = epoch * num_sensor + i
             image = sdf_integrator.render(
@@ -237,7 +236,6 @@ def main(args):
             loss = l2_loss(image, ref_images[i]) / exp_config["batch_size"]
             dr.backward(loss)
             loss_sum += loss
-            print(direct_diff.BORDER_COUNT, "/", direct_diff.ALL_COUNT)
         
         # compute reg loss
         # reg_loss = exp_config["laplacian_weight"] * laplacian_loss(sdf.grid.tensor())
@@ -245,16 +243,25 @@ def main(args):
         # loss_sum += reg_loss
 
         sdf_params_ndarray: np.ndarray = dr.grad(sdf.grid.tensor()).numpy()
-        sdf_params_ndarray = sdf_params_ndarray.reshape([16,16,16])
+        sdf_params_ndarray = sdf_params_ndarray.reshape([16,16,16])#.transpose([2,0,1])
         with open("./d_sdf_ndarray.txt", 'w') as sdf_file:
+            grad_threshold = 1e-11
+            mean, mean_abs, grad_count = 0., 0., 0
             for layer in sdf_params_ndarray:
                 for val_line in layer:
                     for val in val_line:
-                        sdf_file.write(str(val) + ",")
+                        res = ' '
+                        if abs(val) > grad_threshold:
+                            mean += val
+                            mean_abs += abs(val)
+                            grad_count += 1
+                            res = '+' if val > 0 else '-'
+                        sdf_file.write(res + " ")
                     sdf_file.write("\n")
-                sdf_file.write("\n")
-            sdf_file.write("\n")
+                sdf_file.write("\n" + ('-' * 18) + "\n")
+            sdf_file.write("\nMean: " + str(mean / grad_count) + ", mean(abs): " + str(mean_abs / grad_count) + ", nonzero grad count: " + str(grad_count) + "\n")
         # print("Before:\n", sdf_params_ndarray[8]) # PRINT GRAD
+        exit()
     
         # update parameters
         optimizer.step() 
