@@ -10,6 +10,7 @@ This file could be useful for debugging or development of further features.
 
 import time
 import skfmm
+import fastsweep
 
 import drjit as dr
 import numpy as np
@@ -205,28 +206,47 @@ def redistance(phi):
 
 
 def check_eikonal(arr: np.ndarray, dx: list[float]):
+    # grad_x, grad_y, grad_z = np.gradient(arr)
+    # grad_norm: np.ndarray = (grad_x ** 2 + grad_y ** 2 + grad_z ** 2) * 17 * 17
+    # print(grad_norm.min(), grad_norm.max())
+    # return
+    g_mean, g_min, g_max = 0., 99999., -1.
     for i in range(arr.shape[0]):
         for j in range(arr.shape[1]):
             for k in range(arr.shape[2]):
                 curr = arr[i, j, k]
+                # i1, j1, k1 = i,j,k
+
                 if i == 0: i_min = 1
                 elif i == arr.shape[0] - 1: i_min = arr.shape[0] - 2
-                else: i_min = (i-1) if arr[i-1,j,k] <= arr[i+1,j,k] else (i+1)
+                else:
+                    i_min = (i-1) if arr[i-1,j,k] <= arr[i+1,j,k] else (i+1)
+                    # i1 = i+1 if i_min < i else i-1
 
                 if j == 0: j_min = 1
                 elif j == arr.shape[1] - 1: j_min = arr.shape[1] - 2
-                else: j_min = (j-1) if arr[i,j-1,k] <= arr[i,j+1,k] else (j+1)
+                else:
+                    j_min = (j-1) if arr[i,j-1,k] <= arr[i,j+1,k] else (j+1)
+                    # j1 = j+1 if j_min < j else j-1
 
                 if k == 0: k_min = 1
                 elif k == arr.shape[2] - 1: k_min = arr.shape[2] - 2
-                else: k_min = (k-1) if arr[i,j,k-1] <= arr[i,j,k+1] else (k+1)
+                else:
+                    k_min = (k-1) if arr[i,j,k-1] <= arr[i,j,k+1] else (k+1)
+                    # k1 = k+1 if k_min < k else k-1
 
                 x_min, y_min, z_min = arr[i_min, j, k], arr[i, j_min, k], arr[i, j, k_min]
+                # x_max, y_max, z_max = arr[i1, j, k], arr[i, j1, k], arr[i, j, k1]
                 grad_eik = ((curr - x_min) / dx[0]) ** 2 + ((curr - y_min) / dx[1]) ** 2 + ((curr - z_min) / dx[2]) ** 2
+                g_mean += grad_eik
+                g_min = min(g_min, grad_eik)
+                g_max = max(g_max, grad_eik)
 
-                print(f"{grad_eik}, ", end='')
+                print(f"{grad_eik:.3f}, ", end='')
             print()
         print()
+    g_mean /= arr.shape[0] * arr.shape[1] * arr.shape[2]
+    print(g_min, g_max, g_mean)
 
 
 
@@ -262,10 +282,15 @@ if __name__ == "__main__":
                           [.5,-.5,-.8,-.5, .5],
                           [1., .5,-.5, .5, 1.],
                           [1., 1., .5, 1., 1.]]])
+    # test_sdf = np.zeros((17,17,17))
+    # with open("./broken_array.txt") as broken_array_f:
+    #     data = broken_array_f.read().split(' ')
+    #     for i in range(17*17*17):
+    #         test_sdf.flat[i] = float(data[i].strip())
     test_sdf = dr.cuda.TensorXf(test_sdf)
-    # test_sdf = redistance(test_sdf)
-    test_sdf = skfmm.distance(test_sdf, dx=[0.3333, 0.2, 0.2])
-    check_eikonal(test_sdf, dx=[0.3333, 0.2, 0.2])
+    test_sdf = fastsweep.redistance(test_sdf)
+    # test_sdf = skfmm.distance(test_sdf, dx=[2./17,2./17,2./17])
+    check_eikonal(test_sdf.numpy(), dx=[1./17,1./17,1./17])
     # print(test_sdf.shape)
 
     # for a in test_sdf:
