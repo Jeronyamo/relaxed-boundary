@@ -20,6 +20,25 @@ class SDFDirectDiffIntegrator(SDFBaseIntegrator):
         # How many rays hit relaxed boundary
         # print(np.count_nonzero(is_grz_i.numpy()))
 
+        # Count of relaxed boundary hits for SDF grid points
+        # grz_hits: np.ndarray = grz_i.numpy()[is_grz_i.numpy()] * 16
+        # sdf_updates = np.zeros([16,16,16])
+        # for pt in grz_hits:
+        #     voxel_ind_0 = np.floor(pt)
+        #     voxel_ind_1 = np.ceil(pt)
+        #     for i in range(int(voxel_ind_0[0]), int(voxel_ind_1[0]) + 1):
+        #         for j in range(int(voxel_ind_0[1]), int(voxel_ind_1[1]) + 1):
+        #             for k in range(int(voxel_ind_0[2]), int(voxel_ind_1[2]) + 1):
+        #                 sdf_updates[i,j,k] += 1
+
+        # for i in range(sdf_updates.shape[0]):
+        #     for j in range(sdf_updates.shape[1]):
+        #         for k in range(sdf_updates.shape[2]):
+        #             print(f"{sdf_updates[i,j,k]:.3f}, ", end='')
+        #         print()
+        #     print()
+        # print()
+
         # surface emission
         E = itx.emitter(scene=scene).eval(itx)
 
@@ -85,7 +104,7 @@ class SDFDirectDiffIntegrator(SDFBaseIntegrator):
         # grazing point
         grz = dr.zeros(Point3f)
         grz[is_grz_i] = grz_i
-        grz[is_grz_o] = grz_o
+        grz[is_grz_o] = grz_o   # Secondary
         
         # normal velocity at the grazing point
         vn = - sdf.at(grz)
@@ -93,7 +112,7 @@ class SDFDirectDiffIntegrator(SDFBaseIntegrator):
         # evaluate boundary integral
         bp = dr.zeros(mi.Color3f)
         bp[is_grz_i] = vn * dr.detach(L_grz - L) / SDF_EPS
-        bp[is_grz_o] = vn * dr.detach(-L) / SDF_EPS
+        bp[is_grz_o] = vn * dr.detach(-L) / SDF_EPS   # Secondary
 
         # L = dr.replace_grad(L, L)
         L = dr.replace_grad(L, L + bp)
